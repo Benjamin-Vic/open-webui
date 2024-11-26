@@ -1,0 +1,48 @@
+services:
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    pull_policy: always
+    tty: true
+    restart: unless-stopped
+    volumes:
+      - ollama:/root/.ollama
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: ${OLLAMA_GPU_DRIVER-nvidia}
+    #           count: ${OLLAMA_GPU_COUNT-1}
+    #           capabilities:
+    #             - gpu
+
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    restart: unless-stopped
+    volumes:
+      - ./searxng:/etc/searxng
+    ports:
+      - "8080:8080"
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    volumes:
+      - open-webui:/app/backend/data
+    depends_on:
+      - ollama
+      - searxng
+    ports:
+      - 3000:8080
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    environment:
+      - 'WEBUI_AUTH=False'
+      - 'OLLAMA_BASE_URL=http://ollama:11434'
+
+volumes:
+  ollama: {}
+  open-webui: {}
